@@ -18,6 +18,8 @@ package org.apache.kafka.common.serialization;
 
 import org.apache.kafka.common.utils.Utils;
 
+import org.apache.kafka.common.header.Headers;
+
 import java.nio.ByteBuffer;
 
 public class ByteBufferSerializer implements Serializer<ByteBuffer> {
@@ -37,5 +39,15 @@ public class ByteBufferSerializer implements Serializer<ByteBuffer> {
 
         data.flip();
         return Utils.toArray(data);
+    }
+
+    @Override
+    public ByteBuffer serializeToByteBuffer(String topic, ByteBuffer data) {
+        return data;
+    }
+
+    @Override
+    public ByteBuffer serializeToByteBuffer(String topic, Headers headers, ByteBuffer data) {
+        return data;
     }
 }
