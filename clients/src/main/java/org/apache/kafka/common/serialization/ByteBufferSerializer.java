@@ -22,6 +22,18 @@ import org.apache.kafka.common.header.Headers;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Do not need to flip before call <i>serialize(String, ByteBuffer)</i>. For example:
+ *
+ * <blockquote>
+ * <pre>
+ * ByteBufferSerializer serializer = ...; // Create Serializer
+ * ByteBuffer buffer = ...;               // Allocate ByteBuffer
+ * buffer.put(data);                      // Put data into buffer, do not need to flip
+ * serializer.serialize(topic, buffer);   // Serialize buffer
+ * </pre>
+ * </blockquote>
+ */
 public class ByteBufferSerializer implements Serializer<ByteBuffer> {
 
     @Override
