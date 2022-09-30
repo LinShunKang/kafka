@@ -16,9 +16,8 @@
  */
 package org.apache.kafka.common.serialization;
 
-import org.apache.kafka.common.utils.Utils;
-
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.utils.Utils;
 
 import java.nio.ByteBuffer;
 
