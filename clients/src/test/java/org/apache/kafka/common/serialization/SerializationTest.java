@@ -62,16 +62,49 @@ public class SerializationTest {
     private class DummyClass {
     }
 
-    @SuppressWarnings("unchecked")
     @Test
+    @SuppressWarnings("unchecked")
     public void allSerdesShouldRoundtripInput() {
         for (Map.Entry<Class<?>, List<Object>> test : testData.entrySet()) {
-            try (Serde<Object> serde = Serdes.serdeFrom((Class<Object>) test.getKey())) {
+            final Class<Object> clazz = (Class<Object>) test.getKey();
+            try (Serde<Object> serde = Serdes.serdeFrom(clazz)) {
                 for (Object value : test.getValue()) {
-                    assertEquals(value, serde.deserializer().deserialize(topic, serde.serializer().serialize(topic, value)),
-                        "Should get the original " + test.getKey().getSimpleName() + " after serialization and deserialization");
+                    final Deserializer<Object> deserializer = serde.deserializer();
+                    final Serializer<Object> serializer = serde.serializer();
+                    assertEquals(value, deserializer.deserialize(topic, serializer.serialize(topic, value)),
+                        "Should get the original " + clazz.getSimpleName() + " after serialization and deserialization");
                 }
             }
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void allSerdesBufferShouldRoundtripInput() {
+        for (Map.Entry<Class<?>, List<Object>> test : testData.entrySet()) {
+            final Class<Object> clazz = (Class<Object>) test.getKey();
+            if (clazz.isArray()) {
+                continue; // byte[] does not suitable for use assertEquals()
+            }
+
+            try (Serde<Object> serde = Serdes.serdeFrom(clazz)) {
+                for (Object value : test.getValue()) {
+                    final Deserializer<Object> deserializer = serde.deserializer();
+                    final Serializer<Object> serializer = serde.serializer();
+                    assertEquals(value, deserializer.deserialize(topic, null, serializer.serializeToByteBuffer(topic, value)),
+                        "Should get the original " + clazz.getSimpleName() + " after serialization and deserialization");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testByteArraySerde() {
+        final byte[] bytes = "Hello".getBytes(UTF_8);
+        try (ByteArraySerializer ser = new ByteArraySerializer();
+             ByteArrayDeserializer des = new ByteArrayDeserializer()) {
+            assertArrayEquals(bytes, des.deserialize(topic, ser.serialize(topic, bytes)));
+            assertArrayEquals(bytes, des.deserialize(topic, null, ser.serializeToByteBuffer(topic, bytes)));
         }
     }
 
@@ -429,6 +462,12 @@ public class SerializationTest {
             assertEquals(heapBuffer2.duplicate(), des.deserialize(topic, ser.serialize(topic, heapBuffer2.duplicate())));
             assertEquals(directBuffer0.duplicate().flip(), des.deserialize(topic, ser.serialize(topic, directBuffer0.duplicate())));
             assertEquals(directBuffer1.duplicate().flip(), des.deserialize(topic, ser.serialize(topic, directBuffer1.duplicate())));
+
+            assertEquals(heapBuffer0.duplicate().flip(), des.deserialize(topic, null, ser.serializeToByteBuffer(topic, heapBuffer0.duplicate())));
+            assertEquals(heapBuffer1.duplicate().flip(), des.deserialize(topic, null, ser.serializeToByteBuffer(topic, heapBuffer1.duplicate())));
+            assertEquals(heapBuffer2.duplicate(), des.deserialize(topic, null, ser.serializeToByteBuffer(topic, heapBuffer2.duplicate())));
+            assertEquals(directBuffer0.duplicate().flip(), des.deserialize(topic, null, ser.serializeToByteBuffer(topic, directBuffer0.duplicate())));
+            assertEquals(directBuffer1.duplicate().flip(), des.deserialize(topic, null, ser.serializeToByteBuffer(topic, directBuffer1.duplicate())));
         }
     }
 }
